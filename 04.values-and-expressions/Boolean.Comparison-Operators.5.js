@@ -9,15 +9,7 @@ const Lib = require(require("os").homedir() + "/c/lib.js");
     let b = Number(Lib.input());
     Lib.print("Input the value of c: ");
     let c = Number(Lib.input());
-
-    // a < b かつ b > c のときには true を，
-    // そうでなければ false を印字する．
+    // a < b かつ b > c のときには true を，そうでなければ false を印字する．
     Lib.print((a < b) && (b > c));
-    /*?
-     * ここでもし
-     * Lib.print(a < b > c);
-     * と書いたら式の評価はどのように進むのかを
-     * 考えてみましょう．
-    ?*/
     Lib.print("\n");
 }

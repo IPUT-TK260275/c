@@ -1,4 +1,3 @@
-
 "use strict";
 const Lib = require(require("os").homedir() + "/c/lib.js");
 const w = async (n, e = false, d = true) => {
