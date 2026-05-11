@@ -5,6 +5,6 @@ const Lib = require(require("os").homedir() + "/c/lib.js");
     let b = Number(Lib.input());
     let c = Number(Lib.input());
     Lib.print("---\n");
-    Lib.print( a !== b && b !== c && a !== c );
+    Lib.print(a !== b && b !== c && a !== c);
     Lib.print("\n");
 }

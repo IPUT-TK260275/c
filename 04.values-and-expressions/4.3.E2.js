@@ -5,6 +5,6 @@ const Lib = require(require("os").homedir() + "/c/lib.js");
     let b = Lib.input();
     let c = Lib.input();
     Lib.print("---\n");
-    Lib.print( a + b === c );
+    Lib.print(a + b === c);
     Lib.print("\n");
 }

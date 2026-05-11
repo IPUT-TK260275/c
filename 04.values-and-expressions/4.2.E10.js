@@ -3,6 +3,7 @@ const Lib = require(require("os").homedir() + "/c/lib.js");
 {
     let d = Number(Lib.input());
     Lib.print("---\n");
-    Lib.print( d % 7 === 4 || d % 7 === 5 );
+    let rem = d % 7;
+    Lib.print(rem === 4 || rem === 5);
     Lib.print("\n");
 }
