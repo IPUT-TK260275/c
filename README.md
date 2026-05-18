@@ -1,678 +1,96 @@
-# Syntax Notes 03-05
+# 授業コードのREADME
 
-## 03. Programming Basics
+このリポジトリは授業コードと練習問題の置き場です。
 
-### Program Template
+大きいREADMEを1枚で読むのではなく、章ごとのREADMEを開いてください。  
+迷ったら、今書いているファイル名の先頭番号と同じ章を見るのが最短です。
 
+## 章一覧
+
+| 章 | 内容 | README |
+| --- | --- | --- |
+| 02 | 実行、デバッグ、最初のプログラム | [02.code-run-debug/README.md](02.code-run-debug/README.md) |
+| 03 | 印字、数値、文字列、名前、入力 | [03.first-step/README.md](03.first-step/README.md) |
+| 04 | 値と式、演算子、真理値、文字列操作 | [04.values-and-expressions/README.md](04.values-and-expressions/README.md) |
+| 05 | ブロック、変数、代入、初期化 | [05.blocks-and-variables/README.md](05.blocks-and-variables/README.md) |
+| 06 | if、else、else-if、条件分岐 | [06.values-and-expressions/README.md](06.values-and-expressions/README.md) |
+
+## 基本コマンド
+
+実行:
+
+```bash
+node 03.first-step/3.4.E1.js
 ```
+
+入力つきで実行:
+
+```bash
+printf '100\n3\n' | node 03.first-step/3.4.E1.js
+```
+
+構文チェック:
+
+```bash
+node --check 06.values-and-expressions/6.5.E1.js
+```
+
+## 問題を解く順番
+
+どの問題も、まずこの順番で組み立てます。
+
+1. 共通テンプレートを書く
+2. 入力の行数だけ `Lib.input()` を書く
+3. 数値なら `Number(Lib.input())` にする
+4. 問題文に `---` とあれば `Lib.print("---\n");` を先に出す
+5. 必要な計算や判定をする
+6. 答えを `Lib.print(...)` で出す
+7. 最後に `Lib.print("\n");` で改行する
+8. サンプル入力で実行して、空白と改行まで見比べる
+
+例:
+
+```js
 "use strict";
 const Lib = require(require("os").homedir() + "/c/lib.js");
 {
-    // statements
-}
-```
-
-### Print a Value
-
-```
-Lib.print(expression);
-```
-
-Example:
-
-```
-Lib.print(13);
-Lib.print("Hello");
-Lib.print(1 + 2);
-Lib.print("\n");
-```
-
-### Number Literals
-
-```
-1
--23
-4.56
-```
-
-### Arithmetic Expressions
-
-```
-expression1 + expression2
-expression1 - expression2
-expression1 * expression2
-expression1 / expression2
-(expression)
-```
-
-Example:
-
-```
-Lib.print((2 + 3) * 7);
-Lib.print("\n");
-```
-
-### String Literals
-
-```
-"string"
-"Hello"
-"This apple is mine."
-```
-
-### New Line Character
-
-```
-"\n"
-```
-
-Example:
-
-```
-Lib.print("Hello,\nAlice!\n");
-```
-
-### Multiple Statements
-
-```
-{
-    statement1
-    statement2
-    statement3
-}
-```
-
-Example:
-
-```
-{
-    Lib.print("Alice: ");
-    Lib.print(1163 * 79);
-    Lib.print(" yen\n");
-}
-```
-
-### Name a Value
-
-```
-let name = expression;
-```
-
-Example:
-
-```
-let hourly_wage = 1163;
-let hours_alice = 79;
-let salary_alice = hourly_wage * hours_alice;
-```
-
-### Read a String Input
-
-```
-let name = Lib.input();
-```
-
-Example:
-
-```
-Lib.print("Input Your Name: ");
-let name = Lib.input();
-
-Lib.print("Hello, ");
-Lib.print(name);
-Lib.print("!\n");
-```
-
-### Read a Number Input
-
-```
-let name = Number(Lib.input());
-```
-
-Example:
-
-```
-let x = Number(Lib.input());
-let y = Number(Lib.input());
-
-Lib.print(x + y);
-Lib.print("\n");
-```
-
-### Comments
-
-```
-/* comment */
-```
-
-```
- // comment
-```
-
-Example:
-
-```
-Lib.print(13); // print 13
-```
-
----
-
-## 04. Values and Expressions
-
-### Special Number Values
-
-```
-Infinity
-NaN
-```
-
-### Boolean Literals
-
-```
-true
-false
-```
-
-### Arithmetic Operators
-
-```
--expression
-expression1 + expression2
-expression1 - expression2
-expression1 * expression2
-expression1 / expression2
-expression1 % expression2
-```
-
-Example:
-
-```
-Lib.print(30 % 7);
-Lib.print("\n");
-```
-
-### Integer Quotient
-
-```
-(n - n % d) / d
-```
-
-Example:
-
-```
-Lib.print((30 - 30 % 7) / 7);
-Lib.print("\n");
-```
-
-### Function Application
-
-```
-functionName(expression1, expression2, ...)
-```
-
-Example:
-
-```
-Math.abs(-3)
-Math.sqrt(2)
-Math.pow(2, 3)
-Math.floor(3.14)
-Math.ceil(3.14)
-```
-
-### Math Functions and Constants
-
-```
-Math.abs(x)
-Math.sqrt(x)
-Math.pow(x, y)
-Math.floor(x)
-Math.ceil(x)
-
-Math.sin(x)
-Math.cos(x)
-Math.tan(x)
-Math.log(x)
-
-Math.PI
-Math.E
-```
-
-Example:
-
-```
-Lib.print(Math.sqrt(2));
-Lib.print("\n");
-
-Lib.print(Math.pow(2, 3));
-Lib.print("\n");
-```
-
-### Logical Operators
-
-```
-!expression
-expression1 && expression2
-expression1 || expression2
-```
-
-Example:
-
-```
-Lib.print(!false);
-Lib.print("\n");
-
-Lib.print(true && false);
-Lib.print("\n");
-
-Lib.print(true || false);
-Lib.print("\n");
-```
-
-### Comparison Operators
-
-```
-expression1 === expression2
-expression1 !== expression2
-expression1 < expression2
-expression1 <= expression2
-expression1 > expression2
-expression1 >= expression2
-```
-
-Example:
-
-```
-Lib.print(1 + 2 === 3);
-Lib.print("\n");
-
-Lib.print(10 >= 3);
-Lib.print("\n");
-```
-
-### Do Not Chain Comparisons
-
-Bad:
-
-```
-a < b < c
-```
-
-Good:
-
-```
-(a < b) && (b < c)
-```
-
-### String Literals
-
-```
-"string"
-""
-```
-
-Example:
-
-```
-"Hello"
-"This apple is mine."
-```
-
-### Escape Sequences
-
-```
-"\n"
-"\""
-"\\"
-"\t"
-"\b"
-```
-
-Example:
-
-```
-Lib.print("Hello,\nAlice!\n");
-Lib.print("He said \"yes.\"\n");
-Lib.print("\\(^o^)/\n");
-```
-
-### String Concatenation
-
-```
-string1 + string2
-```
-
-Example:
-
-```
-Lib.print("Hello, " + "Alice" + "!\n");
-```
-
-### String Length
-
-```
-Lib.length(string)
-```
-
-Example:
-
-```
-Lib.print(Lib.length("Hello"));
-Lib.print("\n");
-```
-
-### Character at Index
-
-```
-Lib.charAt(string, index)
-```
-
-Example:
-
-```
-Lib.print(Lib.charAt("abcde", 0));
-Lib.print("\n");
-```
-
-### Slice a String
-
-```
-Lib.slice(string, i, j)
-```
-
-Example:
-
-```
-Lib.print(Lib.slice("abcde", 1, 3));
-Lib.print("\n");
-```
-
-### Find a String
-
-```
-Lib.indexOf(string, searchString, startIndex)
-```
-
-Example:
-
-```
-Lib.print(Lib.indexOf("pen-pineapple-apple-pen", "apple", 0));
-Lib.print("\n");
-```
-
----
-
-## 05. Blocks and Variables
-
-### Block Statement
-
-```
-{
-    statement1
-    statement2
-    statement3
-}
-```
-
-Example:
-
-```
-{
-    Lib.print("I ");
-    Lib.print("am ");
-    Lib.print("studying ");
-    Lib.print("programming!\n");
-}
-```
-
-### Nested Blocks
-
-```
-{
-    statement1
-    {
-        statement2
-        statement3
-    }
-    statement4
-}
-```
-
-Example:
-
-```
-{
-    Lib.print("Hello ");
-    {
-        Lib.print("Alice");
-    }
-    Lib.print("!\n");
-}
-```
-
-### Variable Declaration
-
-```
-let identifier;
-```
-
-Example:
-
-```
-let a;
-let name;
-let price_apple;
-```
-
-### Undefined Value
-
-```
-undefined
-```
-
-Example:
-
-```
-let a;
-Lib.print(a);
-Lib.print("\n");
-```
-
-### Assignment Statement
-
-```
-identifier = expression;
-```
-
-Example:
-
-```
-a = 1;
-name = "Alice";
-price = 180;
-```
-
-### Variable Reference
-
-```
-identifier
-```
-
-Example:
-
-```
-Lib.print(a);
-Lib.print(name);
-Lib.print("\n");
-```
-
-### Variable Update
-
-```
-identifier = newExpression;
-```
-
-Example:
-
-```
-a = 1;
-a = 2;
-a = 3;
-```
-
-### Increase by One
-
-```
-a = a + 1;
-```
-
-Example:
-
-```
-let a = 0;
-
-a = a + 1;
-Lib.print(a);
-Lib.print("\n");
-```
-
-### Variable Initialization
-
-```
-let identifier = expression;
-```
-
-Example:
-
-```
-let a = 0;
-let b = 1;
-let c = a + b;
-let name = "Alice";
-```
-
-### Input with Initialization
-
-```
-let name = Lib.input();
-let number = Number(Lib.input());
-```
-
-Example:
-
-```
-let name = Lib.input();
-let age = Number(Lib.input());
-
-Lib.print(name);
-Lib.print(": ");
-Lib.print(age);
-Lib.print("\n");
-```
-
-### Scope
-
-Variables declared with `let` can be used inside the block where they are declared.
-
-Example:
-
-```
-{
-    let a = 1;
-    Lib.print(a);
+    let price = Number(Lib.input());
+    let number = Number(Lib.input());
+    Lib.print("---\n");
+    Lib.print(price * number);
     Lib.print("\n");
 }
 ```
 
-Bad:
+よくあるミス:
 
-```
+| ミス | 直し方 |
+| --- | --- |
+| 数値入力をそのまま足してしまう | `Number(Lib.input())` を使う |
+| 改行が足りない | 最後に `Lib.print("\n");` |
+| 余計な空白を出す | 出力例と同じ場所だけ `" "` を出す |
+| 等しいか調べるのに `=` を使う | 比較は `===`、代入は `=` |
+| `a < b < c` と書く | `a < b && b < c` と書く |
+
+## 共通テンプレート
+
+授業コードはだいたいこの形です。
+
+```js
+"use strict";
+const Lib = require(require("os").homedir() + "/c/lib.js");
 {
-    let a = 1;
-}
-
-Lib.print(a);
-```
-
-### Duplicate Declaration
-
-Bad:
-
-```
-{
-    let a = 1;
-    let a = 2;
-}
-```
-
-Good:
-
-```
-{
-    let a = 1;
-    a = 2;
+    // ここに処理を書く
 }
 ```
 
----
+よく使う言葉:
 
-## Quick Reference
-
-```
-Lib.print(expression);
-
-let name = expression;
-let name = Lib.input();
-let name = Number(Lib.input());
-
-Infinity
-NaN
-true
-false
-
--expression
-expression1 + expression2
-expression1 - expression2
-expression1 * expression2
-expression1 / expression2
-expression1 % expression2
-
-functionName(expression1, expression2, ...)
-
-!expression
-expression1 && expression2
-expression1 || expression2
-
-expression1 === expression2
-expression1 !== expression2
-expression1 < expression2
-expression1 <= expression2
-expression1 > expression2
-expression1 >= expression2
-
-"string"
-"\n"
-"\""
-"\\"
-
-string1 + string2
-
-Lib.length(string)
-Lib.charAt(string, index)
-Lib.slice(string, i, j)
-Lib.indexOf(string, searchString, startIndex)
-
-{
-    statement1
-    statement2
-}
-
-let identifier;
-identifier = expression;
-identifier
-let identifier = expression;
-
-undefined
-
-a = a + 1;
-```
+| code | 意味 |
+| --- | --- |
+| `Lib.print(x)` | `x` を画面に出す |
+| `Lib.input()` | 1行入力を読む |
+| `Number(x)` | `x` を数値に変える |
+| `let name = x` | `x` に `name` という名前を付ける |
+| `if` | もし |
+| `else` | そうでなければ |
