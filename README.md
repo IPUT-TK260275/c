@@ -9,6 +9,7 @@
 
 | 章 | 内容 | README |
 | --- | --- | --- |
+| First of All | 型、文字、ASCII、改行、入力の前提 | [First of All/README.md](First%20of%20All/README.md) |
 | 02 | 実行、デバッグ、最初のプログラム | [02.code-run-debug/README.md](02.code-run-debug/README.md) |
 | 03 | 印字、数値、文字列、名前、入力 | [03.first-step/README.md](03.first-step/README.md) |
 | 04 | 値と式、演算子、真理値、文字列操作 | [04.values-and-expressions/README.md](04.values-and-expressions/README.md) |
