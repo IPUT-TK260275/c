@@ -12,6 +12,46 @@
 | `true` | 条件が成り立つ |
 | `false` | 条件が成り立たない |
 
+## 全問を解くための型
+
+06章は、まず「何通りに分けるか」を決めます。
+
+2通り:
+
+```js
+if (condition) {
+    // true のとき
+}
+else {
+    // false のとき
+}
+```
+
+3通り以上:
+
+```js
+if (condition1) {
+}
+else if (condition2) {
+}
+else {
+}
+```
+
+答えをすぐ出しても、変数に入れて最後に出してもOKです。
+
+```js
+let message;
+if (a < 0) {
+    message = "NEGATIVE";
+}
+else {
+    message = "NONNEGATIVE";
+}
+Lib.print(message);
+Lib.print("\n");
+```
+
 ## 6.1 if-else
 
 2択の分岐です。
@@ -147,6 +187,105 @@ Lib.print("\n");
 | `6.5.E12.js` | 年と月から日数を出す |
 | `6.5.E13.js` | 4つの整数の最小値を出す |
 | `6.5.E14.js` | 欠席と遅刻から出席条件を判定 |
+
+問題別の解き方:
+
+| 問題 | 使う型 |
+| --- | --- |
+| `6.5.E1` | `a < 0` で2択 |
+| `6.5.E2` | `a === b` で2択 |
+| `6.5.E3` | `price * number <= 5000` で2択 |
+| `6.5.E4` | 代金 `total` を作り、送料を足す |
+| `6.5.E5` | うるう年判定 |
+| `6.5.E6` | 2つを比べ、小さい順に出す |
+| `6.5.E7` | 3つを swap で並べ替える |
+| `6.5.E8` | `d % 7` で曜日に分ける |
+| `6.5.E9` | 負、0、正の3択 |
+| `6.5.E10` | `&&` で2つの回答をまとめて判定 |
+| `6.5.E11` | 文字列を `else if` で分類 |
+| `6.5.E12` | 月の日数、2月だけうるう年判定 |
+| `6.5.E13` | 最小値を変数で更新 |
+| `6.5.E14` | 遅刻3回を欠席1回に換算 |
+
+うるう年判定:
+
+```js
+if (year % 400 === 0) {
+    // うるう年
+}
+else if (year % 100 === 0) {
+    // 平年
+}
+else if (year % 4 === 0) {
+    // うるう年
+}
+else {
+    // 平年
+}
+```
+
+2つの値の交換:
+
+```js
+if (a > b) {
+    let tmp = a;
+    a = b;
+    b = tmp;
+}
+```
+
+3つを小さい順にする型:
+
+```js
+if (a > b) {
+    let tmp = a;
+    a = b;
+    b = tmp;
+}
+if (b > c) {
+    let tmp = b;
+    b = c;
+    c = tmp;
+}
+if (a > b) {
+    let tmp = a;
+    a = b;
+    b = tmp;
+}
+```
+
+最小値を探す型:
+
+```js
+let minimum = a;
+if (b < minimum) {
+    minimum = b;
+}
+if (c < minimum) {
+    minimum = c;
+}
+```
+
+月の日数:
+
+| 月 | 日数 |
+| --- | --- |
+| 2 | 28または29 |
+| 4, 6, 9, 11 | 30 |
+| それ以外 | 31 |
+
+遅刻と欠席:
+
+```js
+let counted_absences = a + Math.floor(b / 3);
+if (counted_absences > 6) {
+    Lib.print("OUT");
+}
+else {
+    let remaining_lates = (6 - counted_absences) * 3 + (2 - b % 3);
+    Lib.print(remaining_lates);
+}
+```
 
 サンプル確認:
 

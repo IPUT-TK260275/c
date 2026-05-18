@@ -2,6 +2,23 @@
 
 この章のゴールは、変数の作り方、値の入れ方、値の使い方を分けて理解することです。
 
+## 全問を解くための型
+
+05章は、変数の「作る」「入れる」「読む」「入れ直す」を見分ければ解けます。
+
+```js
+let a;        // 作る
+a = 10;      // 入れる
+Lib.print(a); // 読む
+a = a + 1;   // 入れ直す
+```
+
+初期値が分かっているなら、作ることと入れることを1行にできます。
+
+```js
+let a = 10;
+```
+
 ## 5.1 ブロック
 
 ブロックは `{` と `}` で囲まれたまとまりです。
@@ -127,4 +144,28 @@ let a = 2;
 // OK
 let b = 1;
 b = 2;
+```
+
+## 5.6 変数で問題を解く手順
+
+長い式は、小さい名前に分けます。
+
+```js
+let price = Number(Lib.input());
+let number = Number(Lib.input());
+let subtotal = price * number;
+let tax_included = Math.floor(subtotal * 1.1);
+
+Lib.print(tax_included);
+Lib.print("\n");
+```
+
+同じ値を何度も使うなら、先に変数に入れます。
+
+```js
+let total = price * number;
+Lib.print(total);
+Lib.print("\n");
+Lib.print(total + 230);
+Lib.print("\n");
 ```

@@ -2,6 +2,29 @@
 
 この章のゴールは、コードを書いて、実行して、出力を見ることです。
 
+## 全問を解くための型
+
+02章では、まず文字を正確に出せることが大事です。
+
+```js
+"use strict";
+const Lib = require(require("os").homedir() + "/c/lib.js");
+{
+    Lib.print("I am ");
+    Lib.print("Alice");
+    Lib.print("\n");
+}
+```
+
+出力例と同じにするコツ:
+
+| 見たいもの | 書き方 |
+| --- | --- |
+| 文字を出す | `Lib.print("text");` |
+| 改行する | `Lib.print("\n");` |
+| 入力をそのまま使う | `let x = Lib.input();` |
+| 文字と入力をつなげる | `Lib.print("Hello, "); Lib.print(x);` |
+
 ## 2.1 最初のプログラム
 
 最小の形:

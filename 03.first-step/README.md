@@ -2,6 +2,46 @@
 
 この章のゴールは、値を作り、画面に出し、入力を使うことです。
 
+## 全問を解くための型
+
+03章は「指定された形で出力する」問題が中心です。
+
+まず、出力例を行ごとに分解します。
+
+```text
+---
+300
+```
+
+この出力なら、コードはだいたいこうなります。
+
+```js
+Lib.print("---\n");
+Lib.print(300);
+Lib.print("\n");
+```
+
+複数の値を1行に出すときは、必要な空白だけ出します。
+
+```js
+Lib.print(a);
+Lib.print(" ");
+Lib.print(b);
+Lib.print("\n");
+```
+
+入力がある問題は、入力例の行数だけ読みます。
+
+```text
+100
+3
+```
+
+```js
+let price = Number(Lib.input());
+let number = Number(Lib.input());
+```
+
 ## 3.1 値を出す
 
 `Lib.print` は値を画面に出します。
@@ -144,3 +184,21 @@ printf '100\n3\n' | node 03.first-step/3.4.E1.js
 | --- | --- |
 | `let s = Lib.input();` | 文字列として読む |
 | `let n = Number(Lib.input());` | 数値として読む |
+
+入力、計算、出力の完成形:
+
+```js
+let a = Number(Lib.input());
+let b = Number(Lib.input());
+Lib.print("---\n");
+Lib.print(a + b);
+Lib.print("\n");
+```
+
+出力例に単位や文字がある場合は、文字列として分けて出します。
+
+```js
+Lib.print("Alice: ");
+Lib.print(1163 * 79);
+Lib.print(" yen\n");
+```
