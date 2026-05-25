@@ -50,21 +50,24 @@ TEMP_DIR=""
 CLEAN_TEMP=0
 PROGRESS_WIDTH=34
 MAX_JOBS="${JOBS:-}"
+SUBMIT_JOBS="${SUBMIT_JOBS:-}"
+POLL_INTERVAL="0.02"
 
 usage() {
     cat <<'EOF'
 USAGE:
   ./submit.sh
   ./submit.sh <PROBLEM_ID> <CODE_FILE_PATH>
-  ./submit.sh [--jobs N] --all
+  ./submit.sh [--jobs N] [--submit-jobs N] --all
   ./submit.sh [--jobs N] --check-all
 
 EXAMPLES:
   ./submit.sh
   ./submit.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
   ./submit.sh --all
-  ./submit.sh --jobs 8 --check-all
-  JOBS=8 ./submit.sh --all
+  ./submit.sh --jobs 85 --check-all
+  ./submit.sh --jobs 85 --submit-jobs 85 --all
+  JOBS=85 SUBMIT_JOBS=85 ./submit.sh --all
 
 This script runs TLS local grading first.
 It submits only when the score is 100.
@@ -321,7 +324,7 @@ ensure_tls() {
 detect_jobs() {
     local detected
 
-    detected=20
+    detected=85
     printf '%s' "${detected}"
 }
 
@@ -331,6 +334,13 @@ validate_jobs() {
     fi
     if ! [[ "${MAX_JOBS}" =~ ^[0-9]+$ ]] || [ "${MAX_JOBS}" -lt 1 ]; then
         error "--jobs must be a positive integer."
+        exit 2
+    fi
+    if [ -z "${SUBMIT_JOBS}" ]; then
+        SUBMIT_JOBS="${MAX_JOBS}"
+    fi
+    if ! [[ "${SUBMIT_JOBS}" =~ ^[0-9]+$ ]] || [ "${SUBMIT_JOBS}" -lt 1 ]; then
+        error "--submit-jobs must be a positive integer."
         exit 2
     fi
 }
@@ -491,6 +501,24 @@ grade_worker() {
     mv "${result_tmp}" "${result_file}"
 }
 
+submit_worker() {
+    local problem_id="$1"
+    local code_path="$2"
+    local temp_dir="$3"
+    local index="$4"
+    local status=0
+    local submit_log="${temp_dir}/${problem_id}.submit.log"
+    local result_tmp="${temp_dir}/submit-result.${index}.tmp"
+    local result_file="${temp_dir}/submit-result.${index}"
+
+    if ! submit_problem "${problem_id}" >"${submit_log}" 2>&1; then
+        status=1
+    fi
+
+    printf '%s\t%s\t%s\t%s\n' "${problem_id}" "${code_path}" "${submit_log}" "${status}" > "${result_tmp}"
+    mv "${result_tmp}" "${result_file}"
+}
+
 run_one() {
     local problem_id="$1"
     local code_path="$2"
@@ -613,6 +641,9 @@ run_all() {
     local frame=0
     local last_label="ready"
     local last_state="run"
+    local submit_pids=()
+    local submit_next=0
+    local submit_active=0
 
     TEMP_DIR="$(mktemp -d)"
     CLEAN_TEMP=1
@@ -639,7 +670,11 @@ run_all() {
     else
         info "Checking ${total} problems. Dry run: nothing will be submitted."
     fi
-    info "Parallel grading with ${MAX_JOBS} job(s). Use --jobs N or JOBS=N to tune it."
+    if [ "${do_submit}" = "1" ]; then
+        info "Parallel grading with ${MAX_JOBS} job(s), parallel submitting with ${SUBMIT_JOBS} job(s)."
+    else
+        info "Parallel grading with ${MAX_JOBS} job(s). Use --jobs N or JOBS=N to tune it."
+    fi
     hide_cursor
     report_progress 0 "${total}" run "ready" 0 0 0 "${frame}"
 
@@ -648,7 +683,7 @@ run_all() {
             entry="${entries[${next}]}"
             problem_id="${entry%%$'\t'*}"
             code_path="${entry#*$'\t'}"
-            "${BASH_SOURCE[0]}" --grade-worker "${problem_id}" "${BASE_DIR}/${code_path}" "${code_path}" "${TEMP_DIR}" "${next}" &
+            grade_worker "${problem_id}" "${BASE_DIR}/${code_path}" "${code_path}" "${TEMP_DIR}" "${next}" &
             pids["${next}"]=$!
             next=$((next + 1))
             active=$((active + 1))
@@ -693,39 +728,74 @@ run_all() {
             if [ -t 1 ]; then
                 report_progress "${completed}" "${total}" "${last_state}" "${last_label}" "${active}" "${ok_count}" "${failed_count}" "${frame}"
             fi
-            sleep 0.1
+            sleep "${POLL_INTERVAL}"
         fi
     done
     finish_live_meter
 
     if [ "${do_submit}" = "1" ] && [ "${#full_scores[@]}" -gt 0 ]; then
         say
-        info "Submitting ${#full_scores[@]} full-score answer(s) one by one."
+        info "Submitting ${#full_scores[@]} full-score answer(s) with ${SUBMIT_JOBS} job(s)."
         completed=0
         total="${#full_scores[@]}"
+        submit_next=0
+        submit_active=0
+        submit_pids=()
         frame=0
         last_state="run"
         last_label="submit queue"
-        report_progress 0 "${total}" run "submit queue" 1 0 0 "${frame}"
+        report_progress 0 "${total}" run "submit queue" 0 0 0 "${frame}"
 
-        for entry in "${full_scores[@]}"; do
-            problem_id="${entry%%$'\t'*}"
-            code_path="${entry#*$'\t'}"
-            completed=$((completed + 1))
+        while [ "${completed}" -lt "${total}" ]; do
+            while [ "${submit_active}" -lt "${SUBMIT_JOBS}" ] && [ "${submit_next}" -lt "${total}" ]; do
+                entry="${full_scores[${submit_next}]}"
+                problem_id="${entry%%$'\t'*}"
+                code_path="${entry#*$'\t'}"
+                submit_worker "${problem_id}" "${code_path}" "${TEMP_DIR}" "${submit_next}" &
+                submit_pids["${submit_next}"]=$!
+                submit_next=$((submit_next + 1))
+                submit_active=$((submit_active + 1))
+            done
 
-            start_spinner "submitting ${problem_id}"
-            submit_log="${TEMP_DIR}/${problem_id}.submit.log"
-            if submit_problem "${problem_id}" >"${submit_log}" 2>&1; then
-                stop_spinner
-                submitted_count=$((submitted_count + 1))
+            made_progress=0
+            for index in "${!submit_pids[@]}"; do
+                pid="${submit_pids[${index}]}"
+                if [ -z "${pid}" ]; then
+                    continue
+                fi
+
+                result_file="${TEMP_DIR}/submit-result.${index}"
+                if ! [ -f "${result_file}" ]; then
+                    continue
+                fi
+
+                wait "${pid}" 2>/dev/null || true
+                submit_pids["${index}"]=""
+                submit_active=$((submit_active - 1))
+                completed=$((completed + 1))
+                made_progress=1
+
+                IFS=$'\t' read -r problem_id code_path submit_log status < "${result_file}"
+                if [ "${status}" = "0" ]; then
+                    submitted_count=$((submitted_count + 1))
+                    last_state="submit"
+                    last_label="${problem_id} submitted"
+                else
+                    submit_failed_count=$((submit_failed_count + 1))
+                    submit_failures+=("${problem_id}"$'\t'"${code_path}"$'\t'"${submit_log}")
+                    last_state="error"
+                    last_label="${problem_id} submit failed"
+                fi
                 frame=$((frame + 1))
-                report_progress "${completed}" "${total}" submit "${problem_id} submitted" 1 "${submitted_count}" "${submit_failed_count}" "${frame}"
-            else
-                stop_spinner
-                submit_failed_count=$((submit_failed_count + 1))
-                submit_failures+=("${problem_id}"$'\t'"${code_path}"$'\t'"${submit_log}")
+                report_progress "${completed}" "${total}" "${last_state}" "${last_label}" "${submit_active}" "${submitted_count}" "${submit_failed_count}" "${frame}"
+            done
+
+            if [ "${made_progress}" -eq 0 ]; then
                 frame=$((frame + 1))
-                report_progress "${completed}" "${total}" error "${problem_id} submit failed" 1 "${submitted_count}" "${submit_failed_count}" "${frame}"
+                if [ -t 1 ]; then
+                    report_progress "${completed}" "${total}" "${last_state}" "${last_label}" "${submit_active}" "${submitted_count}" "${submit_failed_count}" "${frame}"
+                fi
+                sleep "${POLL_INTERVAL}"
             fi
         done
         finish_live_meter
@@ -770,11 +840,6 @@ run_all() {
 main() {
     ensure_tls
 
-    if [ "$#" -eq 6 ] && [ "$1" = "--grade-worker" ]; then
-        grade_worker "$2" "$3" "$4" "$5" "$6"
-        exit 0
-    fi
-
     local positional=()
     while [ "$#" -gt 0 ]; do
         case "$1" in
@@ -784,6 +849,14 @@ main() {
                     exit 2
                 fi
                 MAX_JOBS="$2"
+                shift 2
+                ;;
+            --submit-jobs)
+                if [ "$#" -lt 2 ]; then
+                    error "$1 requires a value."
+                    exit 2
+                fi
+                SUBMIT_JOBS="$2"
                 shift 2
                 ;;
             *)
