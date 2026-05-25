@@ -1,0 +1,4 @@
+Input a string: ---
+Ha
+HaHa
+HaHaHa
