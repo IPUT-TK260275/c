@@ -51,6 +51,8 @@ CLEAN_TEMP=0
 PROGRESS_WIDTH=34
 MAX_JOBS="${JOBS:-}"
 SUBMIT_JOBS="${SUBMIT_JOBS:-}"
+SUBMIT_RETRIES="${SUBMIT_RETRIES:-3}"
+CASE_JOBS="${CASE_JOBS:-16}"
 POLL_INTERVAL="0.02"
 
 usage() {
@@ -58,16 +60,16 @@ usage() {
 USAGE:
   ./submit.sh
   ./submit.sh <PROBLEM_ID> <CODE_FILE_PATH>
-  ./submit.sh [--jobs N] [--submit-jobs N] --all
-  ./submit.sh [--jobs N] --check-all
+  ./submit.sh [--jobs N] [--case-jobs N] [--submit-jobs N] [--submit-retries N] --all
+  ./submit.sh [--jobs N] [--case-jobs N] --check-all
 
 EXAMPLES:
   ./submit.sh
   ./submit.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
   ./submit.sh --all
   ./submit.sh --jobs 85 --check-all
-  ./submit.sh --jobs 85 --submit-jobs 85 --all
-  JOBS=85 SUBMIT_JOBS=85 ./submit.sh --all
+  ./submit.sh --jobs 85 --case-jobs 16 --all
+  JOBS=85 CASE_JOBS=16 ./submit.sh --all
 
 This script runs TLS local grading first.
 It submits only when the score is 100.
@@ -337,10 +339,18 @@ validate_jobs() {
         exit 2
     fi
     if [ -z "${SUBMIT_JOBS}" ]; then
-        SUBMIT_JOBS="${MAX_JOBS}"
+        SUBMIT_JOBS=1
     fi
     if ! [[ "${SUBMIT_JOBS}" =~ ^[0-9]+$ ]] || [ "${SUBMIT_JOBS}" -lt 1 ]; then
         error "--submit-jobs must be a positive integer."
+        exit 2
+    fi
+    if ! [[ "${SUBMIT_RETRIES}" =~ ^[0-9]+$ ]] || [ "${SUBMIT_RETRIES}" -lt 1 ]; then
+        error "--submit-retries must be a positive integer."
+        exit 2
+    fi
+    if ! [[ "${CASE_JOBS}" =~ ^[0-9]+$ ]] || [ "${CASE_JOBS}" -lt 1 ]; then
+        error "--case-jobs must be a positive integer."
         exit 2
     fi
 }
@@ -381,6 +391,118 @@ grade_locally() {
         "${check_script}" "${code_path}"
     else
         "${default_script}" "${problem_id}" "${code_path}"
+    fi
+}
+
+case_count_for() {
+    local problem_id="$1"
+    local judge_dir="${TLS_DIR}/problems/${problem_id}/judge"
+
+    if [ -d "${judge_dir}" ]; then
+        find "${judge_dir}" -mindepth 1 -maxdepth 1 -type d | wc -l
+    else
+        printf '0\n'
+    fi
+}
+
+fast_default_case_worker() {
+    local work_dir="$1"
+    local case_dir="$2"
+    local ext="$3"
+    local exec_time="$4"
+    local code_file="${work_dir}/code.txt"
+    local case_result="R"
+
+    rm -f "${case_dir}/a.out" "${case_dir}/compile-error.txt" "${case_dir}/output.txt" "${case_dir}/error.txt" "${case_dir}/result.txt"
+
+    if ! (cd "${case_dir}" && node "transform.js" "${code_file}" > "transformed.${ext}" 2> "compile-error.txt"); then
+        printf 'C\n' > "${case_dir}/result.txt"
+        return
+    fi
+
+    set +e
+    (cd "${case_dir}" && timeout "${exec_time}" node "transformed.${ext}" < "input.txt" > "output.txt" 2> "error.txt")
+    if [ "$?" -eq 0 ]; then
+        (cd "${case_dir}" && node "verify.js" > "result.txt")
+    else
+        printf 'R\n' > "${case_dir}/result.txt"
+    fi
+    set -e
+
+    case_result="$(tr -d '[:space:]' < "${case_dir}/result.txt" 2>/dev/null || printf 'R')"
+    case "${case_result}" in
+        1|0|C|R) ;;
+        *) printf 'R\n' > "${case_dir}/result.txt" ;;
+    esac
+}
+
+fast_grade_default() {
+    local problem_id="$1"
+    local code_path="$2"
+    local ext="js"
+    local exec_time="5s"
+    local work_dir="${TLS_DIR}/problems/${problem_id}"
+    local judge_dir="${work_dir}/judge"
+    local case_dirs=()
+    local pids=()
+    local next=0
+    local total=0
+    local pid
+    local result
+    local accepted=0
+    local test_result=""
+    local case_dir
+
+    cp "${code_path}" "${work_dir}/code.txt"
+    rm -f "${work_dir}/test_result.txt" "${work_dir}/score.txt"
+
+    while IFS= read -r case_dir; do
+        case_dirs+=("${case_dir}")
+    done < <(find "${judge_dir}" -mindepth 1 -maxdepth 1 -type d | sort -V)
+
+    total="${#case_dirs[@]}"
+    while [ "${next}" -lt "${total}" ]; do
+        pids=()
+        while [ "${#pids[@]}" -lt "${CASE_JOBS}" ] && [ "${next}" -lt "${total}" ]; do
+            fast_default_case_worker "${work_dir}" "${case_dirs[${next}]}" "${ext}" "${exec_time}" &
+            pids+=("$!")
+            next=$((next + 1))
+        done
+
+        for pid in "${pids[@]}"; do
+            wait "${pid}" 2>/dev/null || true
+        done
+    done
+
+    for case_dir in "${case_dirs[@]}"; do
+        result="$(tr -d '[:space:]' < "${case_dir}/result.txt")"
+        test_result="${test_result}${result}"
+        if [ "${result}" = "1" ]; then
+            accepted=$((accepted + 1))
+        fi
+    done
+
+    printf '%s\n' "${test_result}" > "${work_dir}/test_result.txt"
+    printf '%s\n' "$((100 * accepted / total))" > "${work_dir}/score.txt"
+    printf 'fast default check: %s/%s cases accepted\n' "${accepted}" "${total}"
+}
+
+grade_locally_quiet() {
+    local problem_id="$1"
+    local code_path="$2"
+    local check_script="${TLS_DIR}/scripts/problems/${problem_id}-check.sh"
+    local case_count
+
+    if [ -f "${check_script}" ]; then
+        grade_locally "${problem_id}" "${code_path}"
+        return
+    fi
+
+    case_count="$(case_count_for "${problem_id}")"
+    if [ "${case_count}" -gt 10 ]; then
+        fast_grade_default "${problem_id}" "${code_path}"
+    else
+        grade_locally "${problem_id}" "${code_path}"
     fi
 }
 
@@ -510,10 +632,24 @@ submit_worker() {
     local submit_log="${temp_dir}/${problem_id}.submit.log"
     local result_tmp="${temp_dir}/submit-result.${index}.tmp"
     local result_file="${temp_dir}/submit-result.${index}"
+    local attempt=1
 
-    if ! submit_problem "${problem_id}" >"${submit_log}" 2>&1; then
+    : > "${submit_log}"
+    while [ "${attempt}" -le "${SUBMIT_RETRIES}" ]; do
+        {
+            printf 'attempt %d/%d\n' "${attempt}" "${SUBMIT_RETRIES}"
+            submit_problem "${problem_id}"
+        } >>"${submit_log}" 2>&1 && {
+            status=0
+            break
+        }
+
         status=1
-    fi
+        if [ "${attempt}" -lt "${SUBMIT_RETRIES}" ]; then
+            sleep "$(awk "BEGIN { printf \"%.2f\", ${attempt} * 0.35 }")"
+        fi
+        attempt=$((attempt + 1))
+    done
 
     printf '%s\t%s\t%s\t%s\n' "${problem_id}" "${code_path}" "${submit_log}" "${status}" > "${result_tmp}"
     mv "${result_tmp}" "${result_file}"
@@ -537,7 +673,7 @@ run_one() {
 
     if [ "${quiet}" = "1" ]; then
         grade_log="${TEMP_DIR}/${problem_id}.grade.log"
-        if ! grade_locally "${problem_id}" "${code_path}" >"${grade_log}" 2>&1; then
+        if ! grade_locally_quiet "${problem_id}" "${code_path}" >"${grade_log}" 2>&1; then
             score="$(score_for "${problem_id}")"
             warn "${problem_id} local grading failed. See ${grade_log}"
             return 1
@@ -671,9 +807,9 @@ run_all() {
         info "Checking ${total} problems. Dry run: nothing will be submitted."
     fi
     if [ "${do_submit}" = "1" ]; then
-        info "Parallel grading with ${MAX_JOBS} job(s), parallel submitting with ${SUBMIT_JOBS} job(s)."
+        info "Parallel grading with ${MAX_JOBS} problem job(s), ${CASE_JOBS} case job(s) for heavy problems; submitting with ${SUBMIT_JOBS} job(s), retrying up to ${SUBMIT_RETRIES} time(s)."
     else
-        info "Parallel grading with ${MAX_JOBS} job(s). Use --jobs N or JOBS=N to tune it."
+        info "Parallel grading with ${MAX_JOBS} problem job(s), ${CASE_JOBS} case job(s) for heavy problems."
     fi
     hide_cursor
     report_progress 0 "${total}" run "ready" 0 0 0 "${frame}"
@@ -805,8 +941,10 @@ run_all() {
     summary_box "${#entries[@]}" "${ok_count}" "${submitted_count}" "${failed_count}" "${do_submit}" "${submit_failed_count}"
 
     if [ "${#submit_failures[@]}" -gt 0 ]; then
+        CLEAN_TEMP=0
         say
         say "${COLOR_BOLD}Submit Failed${COLOR_RESET}"
+        say "  logs kept in: ${TEMP_DIR}"
         for entry in "${submit_failures[@]}"; do
             problem_id="${entry%%$'\t'*}"
             entry="${entry#*$'\t'}"
@@ -857,6 +995,22 @@ main() {
                     exit 2
                 fi
                 SUBMIT_JOBS="$2"
+                shift 2
+                ;;
+            --case-jobs)
+                if [ "$#" -lt 2 ]; then
+                    error "$1 requires a value."
+                    exit 2
+                fi
+                CASE_JOBS="$2"
+                shift 2
+                ;;
+            --submit-retries)
+                if [ "$#" -lt 2 ]; then
+                    error "$1 requires a value."
+                    exit 2
+                fi
+                SUBMIT_RETRIES="$2"
                 shift 2
                 ;;
             *)
