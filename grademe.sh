@@ -718,17 +718,7 @@ discover_problem_files() {
 
     while IFS= read -r file; do
         file_name="$(basename "${file}")"
-        case "${file_name}" in
-            *.trace.txt)
-                problem_id="${file_name%.trace.txt}"
-                ;;
-            *.js)
-                problem_id="${file_name%.js}"
-                ;;
-            *)
-                continue
-                ;;
-        esac
+        problem_id="${file_name%.trace.txt}"
 
         if [ -n "${seen[${problem_id}]:-}" ]; then
             continue
@@ -743,7 +733,29 @@ discover_problem_files() {
             -path "${BASE_DIR}/.git" -prune -o \
             -path "${TLS_DIR}" -prune -o \
             -path "${BASE_DIR}/.tls.0" -prune -o \
-            -type f \( -name '*.js' -o -name '*.trace.txt' \) -print |
+            -type f -name '*.trace.txt' -print |
+            sed "s#^${BASE_DIR}/##" |
+            sort -V
+    )
+
+    while IFS= read -r file; do
+        file_name="$(basename "${file}")"
+        problem_id="${file_name%.js}"
+
+        if [ -n "${seen[${problem_id}]:-}" ]; then
+            continue
+        fi
+        init_script="${TLS_DIR}/scripts/problems/${problem_id}-init.sh"
+        if [ -f "${init_script}" ]; then
+            seen["${problem_id}"]=1
+            printf '%s\t%s\n' "${problem_id}" "${file}"
+        fi
+    done < <(
+        find "${BASE_DIR}" \
+            -path "${BASE_DIR}/.git" -prune -o \
+            -path "${TLS_DIR}" -prune -o \
+            -path "${BASE_DIR}/.tls.0" -prune -o \
+            -type f -name '*.js' -print |
             sed "s#^${BASE_DIR}/##" |
             sort -V
     )
