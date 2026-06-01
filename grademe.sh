@@ -52,7 +52,7 @@ PROGRESS_WIDTH=34
 MAX_JOBS="${JOBS:-}"
 SUBMIT_JOBS="${SUBMIT_JOBS:-}"
 SUBMIT_RETRIES="${SUBMIT_RETRIES:-3}"
-CASE_JOBS="${CASE_JOBS:-16}"
+CASE_JOBS="${CASE_JOBS:-8}"
 POLL_INTERVAL="0.02"
 
 usage() {
@@ -68,9 +68,9 @@ EXAMPLES:
   ./grademe.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
   ./grademe.sh 7.4.R1 07.iteration/7.4.R1.trace.txt
   ./grademe.sh --all
-  ./grademe.sh --jobs 85 --check-all
-  ./grademe.sh --jobs 85 --case-jobs 16 --all
-  JOBS=85 CASE_JOBS=16 ./grademe.sh --all
+  ./grademe.sh --jobs 8 --check-all
+  ./grademe.sh --jobs 8 --case-jobs 8 --all
+  JOBS=8 CASE_JOBS=8 ./grademe.sh --all
 
 This script runs TLS local grading only.
 It auto-detects local .js and .trace.txt answer files.
@@ -328,9 +328,11 @@ ensure_tls() {
 }
 
 acquire_tls_lock() {
+    local current_pid="${BASHPID:-$$}"
+
     LOCK_DIR="${TLS_DIR}/.grade.lock"
     if mkdir "${LOCK_DIR}" 2>/dev/null; then
-        printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+        printf '%s\n' "${current_pid}" > "${LOCK_DIR}/pid"
         return
     fi
 
@@ -342,7 +344,7 @@ acquire_tls_lock() {
         rm -f "${LOCK_DIR}/pid"
         rmdir "${LOCK_DIR}" >/dev/null 2>&1 || true
         if mkdir "${LOCK_DIR}" 2>/dev/null; then
-            printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+            printf '%s\n' "${current_pid}" > "${LOCK_DIR}/pid"
             return
         fi
     fi
@@ -354,7 +356,7 @@ acquire_tls_lock() {
 detect_jobs() {
     local detected
 
-    detected=85
+    detected=8
     printf '%s' "${detected}"
 }
 
@@ -822,6 +824,9 @@ run_all() {
     local submit_pids=()
     local submit_next=0
     local submit_active=0
+    local retry_failures=()
+    local retry_total=0
+    local retry_index=0
 
     do_submit=0
 
@@ -900,6 +905,37 @@ run_all() {
         fi
     done
     finish_live_meter
+
+    if [ "${#failures[@]}" -gt 0 ]; then
+        say
+        info "Rechecking ${#failures[@]} non-full-score answer(s) sequentially."
+        retry_failures=("${failures[@]}")
+        retry_total="${#retry_failures[@]}"
+        failures=()
+        failed_count=0
+
+        for entry in "${retry_failures[@]}"; do
+            retry_index=$((retry_index + 1))
+            problem_id="${entry%%$'\t'*}"
+            entry="${entry#*$'\t'}"
+            code_path="${entry%%$'\t'*}"
+
+            if run_one "${problem_id}" "${BASE_DIR}/${code_path}" 0 1 >/dev/null 2>&1; then
+                score="$(score_for "${problem_id}")"
+                if [ "${score}" = "100" ]; then
+                    full_scores+=("${problem_id}"$'\t'"${code_path}")
+                    ok_count=$((ok_count + 1))
+                    progress_bar "${retry_index}" "${retry_total}" ok "${problem_id} score=100 after retry"
+                    continue
+                fi
+            fi
+
+            score="$(score_for "${problem_id}")"
+            failed_count=$((failed_count + 1))
+            failures+=("${problem_id}"$'\t'"${code_path}"$'\t'"${score}")
+            progress_bar "${retry_index}" "${retry_total}" warn "${problem_id} score=${score} after retry"
+        done
+    fi
 
     if [ "${do_submit}" = "1" ] && [ "${#full_scores[@]}" -gt 0 ]; then
         say
