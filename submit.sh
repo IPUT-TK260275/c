@@ -48,6 +48,7 @@ fi
 SPINNER_PID=""
 TEMP_DIR=""
 CLEAN_TEMP=0
+LOCK_DIR=""
 PROGRESS_WIDTH=34
 MAX_JOBS="${JOBS:-}"
 SUBMIT_JOBS="${SUBMIT_JOBS:-}"
@@ -66,6 +67,7 @@ USAGE:
 EXAMPLES:
   ./submit.sh
   ./submit.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
+  ./submit.sh 7.4.R1 07.iteration/7.4.R1.trace.txt
   ./submit.sh --all
   ./submit.sh --jobs 85 --check-all
   ./submit.sh --jobs 85 --case-jobs 16 --all
@@ -80,6 +82,10 @@ EOF
 cleanup() {
     stop_spinner
     show_cursor
+    if [ -n "${LOCK_DIR}" ] && [ -d "${LOCK_DIR}" ]; then
+        rm -f "${LOCK_DIR}/pid"
+        rmdir "${LOCK_DIR}" >/dev/null 2>&1 || true
+    fi
     if [ "${CLEAN_TEMP}" = "1" ] && [ -n "${TEMP_DIR}" ] && [ -d "${TEMP_DIR}" ]; then
         rm -rf "${TEMP_DIR}"
     fi
@@ -321,6 +327,30 @@ ensure_tls() {
         error "${TLS_DIR}/check.sh does not exist or is not executable."
         exit 1
     fi
+}
+
+acquire_tls_lock() {
+    LOCK_DIR="${TLS_DIR}/.grade.lock"
+    if mkdir "${LOCK_DIR}" 2>/dev/null; then
+        printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+        return
+    fi
+
+    local owner="unknown"
+    if [ -f "${LOCK_DIR}/pid" ]; then
+        owner="$(cat "${LOCK_DIR}/pid" 2>/dev/null || printf 'unknown')"
+    fi
+    if [[ "${owner}" =~ ^[0-9]+$ ]] && ! kill -0 "${owner}" 2>/dev/null; then
+        rm -f "${LOCK_DIR}/pid"
+        rmdir "${LOCK_DIR}" >/dev/null 2>&1 || true
+        if mkdir "${LOCK_DIR}" 2>/dev/null; then
+            printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+            return
+        fi
+    fi
+    error "Another grademe.sh or submit.sh process is using ${TLS_DIR} (pid: ${owner})."
+    error "Run one grading/submission command at a time, then try again."
+    exit 1
 }
 
 detect_jobs() {
@@ -718,17 +748,7 @@ discover_problem_files() {
 
     while IFS= read -r file; do
         file_name="$(basename "${file}")"
-        case "${file_name}" in
-            *.trace.txt)
-                problem_id="${file_name%.trace.txt}"
-                ;;
-            *.js)
-                problem_id="${file_name%.js}"
-                ;;
-            *)
-                continue
-                ;;
-        esac
+        problem_id="${file_name%.trace.txt}"
 
         if [ -n "${seen[${problem_id}]:-}" ]; then
             continue
@@ -743,7 +763,29 @@ discover_problem_files() {
             -path "${BASE_DIR}/.git" -prune -o \
             -path "${TLS_DIR}" -prune -o \
             -path "${BASE_DIR}/.tls.0" -prune -o \
-            -type f \( -name '*.js' -o -name '*.trace.txt' \) -print |
+            -type f -name '*.trace.txt' -print |
+            sed "s#^${BASE_DIR}/##" |
+            sort -V
+    )
+
+    while IFS= read -r file; do
+        file_name="$(basename "${file}")"
+        problem_id="${file_name%.js}"
+
+        if [ -n "${seen[${problem_id}]:-}" ]; then
+            continue
+        fi
+        init_script="${TLS_DIR}/scripts/problems/${problem_id}-init.sh"
+        if [ -f "${init_script}" ]; then
+            seen["${problem_id}"]=1
+            printf '%s\t%s\n' "${problem_id}" "${file}"
+        fi
+    done < <(
+        find "${BASE_DIR}" \
+            -path "${BASE_DIR}/.git" -prune -o \
+            -path "${TLS_DIR}" -prune -o \
+            -path "${BASE_DIR}/.tls.0" -prune -o \
+            -type f -name '*.js' -print |
             sed "s#^${BASE_DIR}/##" |
             sort -V
     )
@@ -977,6 +1019,7 @@ run_all() {
 
 main() {
     ensure_tls
+    acquire_tls_lock
 
     local positional=()
     while [ "$#" -gt 0 ]; do

@@ -14,7 +14,9 @@
 | 03 | 印字、数値、文字列、名前、入力 | [03.first-step/README.md](03.first-step/README.md) |
 | 04 | 値と式、演算子、真理値、文字列操作 | [04.values-and-expressions/README.md](04.values-and-expressions/README.md) |
 | 05 | ブロック、変数、代入、初期化 | [05.blocks-and-variables/README.md](05.blocks-and-variables/README.md) |
-| 06 | if、else、else-if、条件分岐 | [06.values-and-expressions/README.md](06.values-and-expressions/README.md) |
+| 06 | 選択文、条件分岐、if-else | [06.selection/README.md](06.selection/README.md) |
+| 07 | while、カウンタ、accumulator | [07.iteration/README.md](07.iteration/README.md) |
+
 
 ## 基本コマンド
 
@@ -33,7 +35,7 @@ printf '100\n3\n' | node 03.first-step/3.4.E1.js
 構文チェック:
 
 ```bash
-node --check 06.values-and-expressions/6.5.E1.js
+node --check 06.selection/6.5.E1.js
 ```
 
 ## 問題を解く順番

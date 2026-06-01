@@ -47,6 +47,7 @@ fi
 SPINNER_PID=""
 TEMP_DIR=""
 CLEAN_TEMP=0
+LOCK_DIR=""
 PROGRESS_WIDTH=34
 MAX_JOBS="${JOBS:-}"
 SUBMIT_JOBS="${SUBMIT_JOBS:-}"
@@ -65,6 +66,7 @@ USAGE:
 EXAMPLES:
   ./grademe.sh
   ./grademe.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
+  ./grademe.sh 7.4.R1 07.iteration/7.4.R1.trace.txt
   ./grademe.sh --all
   ./grademe.sh --jobs 85 --check-all
   ./grademe.sh --jobs 85 --case-jobs 16 --all
@@ -78,6 +80,10 @@ EOF
 cleanup() {
     stop_spinner
     show_cursor
+    if [ -n "${LOCK_DIR}" ] && [ -d "${LOCK_DIR}" ]; then
+        rm -f "${LOCK_DIR}/pid"
+        rmdir "${LOCK_DIR}" >/dev/null 2>&1 || true
+    fi
     if [ "${CLEAN_TEMP}" = "1" ] && [ -n "${TEMP_DIR}" ] && [ -d "${TEMP_DIR}" ]; then
         rm -rf "${TEMP_DIR}"
     fi
@@ -319,6 +325,30 @@ ensure_tls() {
         error "${TLS_DIR}/check.sh does not exist or is not executable."
         exit 1
     fi
+}
+
+acquire_tls_lock() {
+    LOCK_DIR="${TLS_DIR}/.grade.lock"
+    if mkdir "${LOCK_DIR}" 2>/dev/null; then
+        printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+        return
+    fi
+
+    local owner="unknown"
+    if [ -f "${LOCK_DIR}/pid" ]; then
+        owner="$(cat "${LOCK_DIR}/pid" 2>/dev/null || printf 'unknown')"
+    fi
+    if [[ "${owner}" =~ ^[0-9]+$ ]] && ! kill -0 "${owner}" 2>/dev/null; then
+        rm -f "${LOCK_DIR}/pid"
+        rmdir "${LOCK_DIR}" >/dev/null 2>&1 || true
+        if mkdir "${LOCK_DIR}" 2>/dev/null; then
+            printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+            return
+        fi
+    fi
+    error "Another grademe.sh or submit.sh process is using ${TLS_DIR} (pid: ${owner})."
+    error "Run one grading/submission command at a time, then try again."
+    exit 1
 }
 
 detect_jobs() {
@@ -979,6 +1009,7 @@ run_all() {
 
 main() {
     ensure_tls
+    acquire_tls_lock
 
     local positional=()
     while [ "$#" -gt 0 ]; do
