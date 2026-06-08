@@ -6,6 +6,7 @@ BASE_DIR="${SCRIPT_DIR}"
 TLS_DIR="${BASE_DIR}/.tls"
 ACCESS_CHECK_URL="/toby/2026/c.draft/challenge/access-check.txt"
 SUBMIT_URL="/toby/2026/c.draft/challenge/submit.cgi"
+SUBMITTED_CACHE="${BASE_DIR}/.submitted-full-score"
 
 if [ -n "${NO_COLOR:-}" ]; then
     USE_COLOR=0
@@ -77,6 +78,7 @@ EXAMPLES:
 This script runs TLS local grading first.
 It submits only when the score is 100.
 It auto-detects local .js and .trace.txt answer files through chapter 08.
+Problems recorded in .submitted-full-score are skipped during submission.
 EOF
 }
 
@@ -167,6 +169,7 @@ show_cursor() {
 status_color() {
     case "$1" in
         ok) printf '%s' "${COLOR_GREEN}" ;;
+        skip) printf '%s' "${COLOR_YELLOW}" ;;
         warn) printf '%s' "${COLOR_YELLOW}" ;;
         error) printf '%s' "${COLOR_RED}" ;;
         *) printf '%s' "${COLOR_CYAN}" ;;
@@ -177,6 +180,7 @@ status_badge() {
     case "$1" in
         ok) printf '%s[100]%s' "${COLOR_GREEN}" "${COLOR_RESET}" ;;
         submit) printf '%s[send]%s' "${COLOR_GREEN}" "${COLOR_RESET}" ;;
+        skip) printf '%s[skip]%s' "${COLOR_YELLOW}" "${COLOR_RESET}" ;;
         warn) printf '%s[work]%s' "${COLOR_YELLOW}" "${COLOR_RESET}" ;;
         error) printf '%s[fail]%s' "${COLOR_RED}" "${COLOR_RESET}" ;;
         *) printf '%s[run ]%s' "${COLOR_CYAN}" "${COLOR_RESET}" ;;
@@ -608,11 +612,13 @@ summary_box() {
     local failed_count="$4"
     local do_submit="$5"
     local submit_failed_count="$6"
+    local skipped_count="${7:-0}"
 
     say "${COLOR_CYAN}+---------------- Summary ------------------------+${COLOR_RESET}"
     printf '%s|%s full score    %s%3d/%-3d%s\n' "${COLOR_CYAN}" "${COLOR_RESET}" "${COLOR_GREEN}" "${ok_count}" "${total}" "${COLOR_RESET}"
     if [ "${do_submit}" = "1" ]; then
         printf '%s|%s submitted     %s%3d%s\n' "${COLOR_CYAN}" "${COLOR_RESET}" "${COLOR_GREEN}" "${submitted_count}" "${COLOR_RESET}"
+        printf '%s|%s skipped       %s%3d%s\n' "${COLOR_CYAN}" "${COLOR_RESET}" "${COLOR_YELLOW}" "${skipped_count}" "${COLOR_RESET}"
         if [ "${submit_failed_count}" -eq 0 ]; then
             printf '%s|%s send failed   %s%3d%s\n' "${COLOR_CYAN}" "${COLOR_RESET}" "${COLOR_GREEN}" "${submit_failed_count}" "${COLOR_RESET}"
         else
@@ -625,6 +631,29 @@ summary_box() {
         printf '%s|%s needs work    %s%3d%s\n' "${COLOR_CYAN}" "${COLOR_RESET}" "${COLOR_YELLOW}" "${failed_count}" "${COLOR_RESET}"
     fi
     say "${COLOR_CYAN}+-------------------------------------------------+${COLOR_RESET}"
+}
+
+submitted_full_score_recorded() {
+    local problem_id="$1"
+
+    if ! [ -f "${SUBMITTED_CACHE}" ]; then
+        return 1
+    fi
+
+    awk -F '\t' -v id="${problem_id}" '$1 == id { found = 1 } END { exit found ? 0 : 1 }' "${SUBMITTED_CACHE}"
+}
+
+mark_submitted_full_score() {
+    local problem_id="$1"
+    local code_path="$2"
+    local timestamp
+
+    if submitted_full_score_recorded "${problem_id}"; then
+        return 0
+    fi
+
+    timestamp="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+    printf '%s\t%s\t%s\n' "${problem_id}" "${timestamp}" "${code_path}" >> "${SUBMITTED_CACHE}"
 }
 
 submit_problem() {
@@ -661,23 +690,31 @@ submit_worker() {
     local code_path="$2"
     local temp_dir="$3"
     local index="$4"
-    local status=0
     local submit_log="${temp_dir}/${problem_id}.submit.log"
     local result_tmp="${temp_dir}/submit-result.${index}.tmp"
     local result_file="${temp_dir}/submit-result.${index}"
     local attempt=1
+    local status="0"
 
     : > "${submit_log}"
+    if submitted_full_score_recorded "${problem_id}"; then
+        printf 'skip: %s is already recorded in %s\n' "${problem_id}" "${SUBMITTED_CACHE}" > "${submit_log}"
+        printf '%s\t%s\t%s\t%s\n' "${problem_id}" "${code_path}" "${submit_log}" "skip" > "${result_tmp}"
+        mv "${result_tmp}" "${result_file}"
+        return
+    fi
+
     while [ "${attempt}" -le "${SUBMIT_RETRIES}" ]; do
         {
             printf 'attempt %d/%d\n' "${attempt}" "${SUBMIT_RETRIES}"
             submit_problem "${problem_id}"
         } >>"${submit_log}" 2>&1 && {
-            status=0
+            mark_submitted_full_score "${problem_id}" "${code_path}"
+            status="0"
             break
         }
 
-        status=1
+        status="1"
         if [ "${attempt}" -lt "${SUBMIT_RETRIES}" ]; then
             sleep "$(awk "BEGIN { printf \"%.2f\", ${attempt} * 0.35 }")"
         fi
@@ -729,15 +766,22 @@ run_one() {
         return 0
     fi
 
+    if submitted_full_score_recorded "${problem_id}"; then
+        warn "${problem_id} already submitted with full score; skipped."
+        return 0
+    fi
+
     if [ "${quiet}" = "1" ]; then
         submit_log="${TEMP_DIR}/${problem_id}.submit.log"
         if ! submit_problem "${problem_id}" >"${submit_log}" 2>&1; then
             warn "${problem_id} submission failed. See ${submit_log}"
             return 1
         fi
+        mark_submitted_full_score "${problem_id}" "${code_path}"
     else
         info "Score is 100. Submitting..."
         submit_problem "${problem_id}"
+        mark_submitted_full_score "${problem_id}" "${code_path}"
         success "Submitted ${problem_id}."
     fi
 }
@@ -808,6 +852,7 @@ run_all() {
     local ok_count=0
     local submitted_count=0
     local submit_failed_count=0
+    local skipped_count=0
     local failed_count=0
     local failures=()
     local submit_failures=()
@@ -995,6 +1040,10 @@ run_all() {
                     submitted_count=$((submitted_count + 1))
                     last_state="submit"
                     last_label="${problem_id} submitted"
+                elif [ "${status}" = "skip" ]; then
+                    skipped_count=$((skipped_count + 1))
+                    last_state="skip"
+                    last_label="${problem_id} skipped"
                 else
                     submit_failed_count=$((submit_failed_count + 1))
                     submit_failures+=("${problem_id}"$'\t'"${code_path}"$'\t'"${submit_log}")
@@ -1017,7 +1066,7 @@ run_all() {
     fi
 
     say
-    summary_box "${#entries[@]}" "${ok_count}" "${submitted_count}" "${failed_count}" "${do_submit}" "${submit_failed_count}"
+    summary_box "${#entries[@]}" "${ok_count}" "${submitted_count}" "${failed_count}" "${do_submit}" "${submit_failed_count}" "${skipped_count}"
 
     if [ "${#submit_failures[@]}" -gt 0 ]; then
         CLEAN_TEMP=0

@@ -59,12 +59,15 @@ usage() {
     cat <<'EOF'
 USAGE:
   ./grademe.sh
+  ./grademe.sh <CODE_FILE_PATH>
   ./grademe.sh <PROBLEM_ID> <CODE_FILE_PATH>
   ./grademe.sh [--jobs N] [--case-jobs N] --all
   ./grademe.sh [--jobs N] [--case-jobs N] --check-all
 
 EXAMPLES:
   ./grademe.sh
+  ./grademe.sh 06.selection/6.5.E1.js
+  ./grademe.sh 05.blocks-and-variables/5.4.E3.trace.txt
   ./grademe.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
   ./grademe.sh 7.4.R1 07.iteration/7.4.R1.trace.txt
   ./grademe.sh 8.4.E1 08.iteration-2/8.4.E1.js
@@ -742,6 +745,36 @@ run_one() {
     fi
 }
 
+infer_problem_id_from_path() {
+    local code_path="$1"
+    local file_name
+    local problem_id
+    local init_script
+
+    file_name="$(basename "${code_path}")"
+    case "${file_name}" in
+        *.trace.txt)
+            problem_id="${file_name%.trace.txt}"
+            ;;
+        *.js)
+            problem_id="${file_name%.js}"
+            ;;
+        *)
+            error "Cannot infer problem ID from file path: ${code_path}"
+            error "Expected a file ending in .js or .trace.txt."
+            return 2
+            ;;
+    esac
+
+    init_script="${TLS_DIR}/scripts/problems/${problem_id}-init.sh"
+    if ! [ -f "${init_script}" ]; then
+        error "No problem with ID '${problem_id}' inferred from ${code_path}."
+        return 2
+    fi
+
+    printf '%s\n' "${problem_id}"
+}
+
 discover_problem_files() {
     local file
     local file_name
@@ -1100,6 +1133,17 @@ main() {
 
     if [ "$#" -eq 1 ] && [ "$1" = "--all" ]; then
         run_all 0
+        exit $?
+    fi
+
+    if [ "$#" -eq 1 ]; then
+        if ! [ -f "$1" ]; then
+            error "Code file does not exist: $1"
+            exit 2
+        fi
+
+        problem_id="$(infer_problem_id_from_path "$1")" || exit $?
+        run_one "${problem_id}" "$1" 0 0
         exit $?
     fi
 
