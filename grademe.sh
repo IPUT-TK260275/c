@@ -67,13 +67,14 @@ EXAMPLES:
   ./grademe.sh
   ./grademe.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
   ./grademe.sh 7.4.R1 07.iteration/7.4.R1.trace.txt
+  ./grademe.sh 8.4.E1 08.iteration-2/8.4.E1.js
   ./grademe.sh --all
   ./grademe.sh --jobs 8 --check-all
   ./grademe.sh --jobs 8 --case-jobs 8 --all
   JOBS=8 CASE_JOBS=8 ./grademe.sh --all
 
 This script runs TLS local grading only.
-It auto-detects local .js and .trace.txt answer files.
+It auto-detects local .js and .trace.txt answer files through chapter 08.
 EOF
 }
 

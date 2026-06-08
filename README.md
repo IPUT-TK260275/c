@@ -10,12 +10,14 @@
 | 章 | 内容 | README |
 | --- | --- | --- |
 | First of All | 型、文字、ASCII、改行、入力の前提 | [First of All/README.md](First%20of%20All/README.md) |
+| 01 | Shell、ターミナル、ファイル操作 | [01.shell/README.md](01.shell/README.md) |
 | 02 | 実行、デバッグ、最初のプログラム | [02.code-run-debug/README.md](02.code-run-debug/README.md) |
 | 03 | 印字、数値、文字列、名前、入力 | [03.first-step/README.md](03.first-step/README.md) |
 | 04 | 値と式、演算子、真理値、文字列操作 | [04.values-and-expressions/README.md](04.values-and-expressions/README.md) |
 | 05 | ブロック、変数、代入、初期化 | [05.blocks-and-variables/README.md](05.blocks-and-variables/README.md) |
 | 06 | 選択文、条件分岐、if-else | [06.selection/README.md](06.selection/README.md) |
 | 07 | while、カウンタ、accumulator | [07.iteration/README.md](07.iteration/README.md) |
+| 08 | 反復の入れ子、入力の反復、反復文2 | [08.iteration-2/README.md](08.iteration-2/README.md) |
 
 
 ## 基本コマンド

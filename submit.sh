@@ -68,6 +68,7 @@ EXAMPLES:
   ./submit.sh
   ./submit.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
   ./submit.sh 7.4.R1 07.iteration/7.4.R1.trace.txt
+  ./submit.sh 8.4.E1 08.iteration-2/8.4.E1.js
   ./submit.sh --all
   ./submit.sh --jobs 8 --check-all
   ./submit.sh --jobs 8 --case-jobs 8 --all
@@ -75,7 +76,7 @@ EXAMPLES:
 
 This script runs TLS local grading first.
 It submits only when the score is 100.
-It auto-detects local .js and .trace.txt answer files.
+It auto-detects local .js and .trace.txt answer files through chapter 08.
 EOF
 }
 
