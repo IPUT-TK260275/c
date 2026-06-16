@@ -1,152 +1,99 @@
 # 03. はじめの一歩
 
-この章のゴールは、値を作り、画面に出し、入力を使うことです。
+この章では、JavaScript で値を出力し、計算し、名前を付け、入力を読む基本を学びます。
 
-## 全問を解くための型
+ここから本格的に `.js` ファイルを書きます。最初は「出力例と完全に同じ文字を出す」ことを意識してください。空白や改行も採点では大事です。
 
-03章は「指定された形で出力する」問題が中心です。
+## この章のゴール
 
-まず、出力例を行ごとに分解します。
+| 節 | 学ぶこと |
+| --- | --- |
+| 3.1 | 数値や文字列を出力する |
+| 3.2 | 複数の文を順番に実行する |
+| 3.3 | 値に名前を付ける |
+| 3.4 | 入力を読む |
 
-```text
----
-300
-```
+## 基本形
 
-この出力なら、コードはだいたいこうなります。
-
-```js
-Lib.print("---\n");
-Lib.print(300);
-Lib.print("\n");
-```
-
-複数の値を1行に出すときは、必要な空白だけ出します。
+この教材の JavaScript は、基本的にこの形で書きます。
 
 ```js
-Lib.print(a);
-Lib.print(" ");
-Lib.print(b);
-Lib.print("\n");
+"use strict";
+const Lib = require(require("os").homedir() + "/c/lib.js");
+{
+    // ここに処理を書く
+}
 ```
 
-入力がある問題は、入力例の行数だけ読みます。
-
-```text
-100
-3
-```
+`Lib.print(...)` は画面に出力します。
 
 ```js
-let price = Number(Lib.input());
-let number = Number(Lib.input());
+Lib.print("Hello\n");
 ```
 
-## 3.1 値を出す
+`\n` は改行です。
 
-`Lib.print` は値を画面に出します。
+## 数値と文字列
 
-```js
-Lib.print(13);
-Lib.print("\n");
-Lib.print("Hello");
-Lib.print("\n");
-```
-
-数値はそのまま計算できます。
+数値はそのまま書けます。
 
 ```js
-Lib.print((3 - 5 - 7));
+Lib.print(123);
 Lib.print("\n");
 ```
 
 文字列は `"` で囲みます。
 
 ```js
-Lib.print("Better late than never.\n");
+Lib.print("Hello");
+Lib.print("\n");
 ```
 
-よく使う形:
-
-| code | 意味 |
-| --- | --- |
-| `13` | 数値 |
-| `"Hello"` | 文字列 |
-| `"\n"` | 改行 |
-| `+`, `-`, `*`, `/` | 足す、引く、かける、割る |
-
-対応ファイル:
-
-| file | 内容 |
-| --- | --- |
-| `3.1.1.E1.js` から `3.1.1.E12.js` | 数値と式の出力 |
-| `3.1.2.E1.js` から `3.1.2.E3.js` | 文字列の出力 |
-| `Numbers.*.js` | 数値の例 |
-| `Strings.*.js` | 文字列の例 |
-
-コメントは人間向けのメモです。実行されません。
+計算もできます。
 
 ```js
-Lib.print(13); // 13を出す
+Lib.print(100 * 3);
+Lib.print("\n");
 ```
 
-## 3.2 文を並べる
+## 複数の出力をつなげる
 
-文は上から順に実行されます。
+出力は、書いた順番に表示されます。
 
 ```js
 Lib.print("Alice: ");
-Lib.print(180 * 3 + 120 * 2);
+Lib.print(180 * 3);
 Lib.print(" yen\n");
 ```
 
-出力:
+出力は次のようになります。
 
 ```text
-Alice: 780 yen
+Alice: 540 yen
 ```
 
-対応ファイル:
+空白が必要な場所では、`" "` や `"Alice: "` のように自分で空白を書きます。
 
-| file | 内容 |
-| --- | --- |
-| `3.2.E1.js`, `3.2.E2.js` | 複数の出力を組み合わせる |
-| `Statements.Example.*.js` | 文を並べる例 |
-| `Statements.Exercise.*.js` | 文を並べる練習 |
+## 名前を付ける
 
-## 3.3 値に名前を付ける
-
-`let` は値に名前を付けます。長い式を読みやすくできます。
+`let` を使うと、値に名前を付けられます。
 
 ```js
-let price_apple = 180;
-let number_apples = 120;
-let total = price_apple * number_apples;
+let price = 180;
+let count = 3;
+let total = price * count;
 
 Lib.print(total);
 Lib.print("\n");
 ```
 
-読むコツ:
+名前を付けると、式の意味が読みやすくなります。
 
-| code | 意味 |
-| --- | --- |
-| `let price = 180;` | `price` は `180` |
-| `price * number` | 名前の中身を使って計算 |
-| `let total = ...;` | 計算結果に `total` と名前を付ける |
+## 入力を読む
 
-対応ファイル:
+`Lib.input()` は入力を 1 行読みます。
 
-| file | 内容 |
-| --- | --- |
-| `3.3.E1.js` から `3.3.E3.js` | 名前を使う練習 |
-| `Names.Example.*.js` | 名前を付ける例 |
-
-## 3.4 入力を使う
-
-`Lib.input()` は1行入力を文字列として読みます。数値として使うなら `Number(...)` で変換します。
-
-文字列入力:
+文字列として読む場合です。
 
 ```js
 let name = Lib.input();
@@ -155,50 +102,64 @@ Lib.print(name);
 Lib.print("!\n");
 ```
 
-数値入力:
+数値として読む場合は `Number(...)` で変換します。
 
 ```js
 let price = Number(Lib.input());
-let number = Number(Lib.input());
+let count = Number(Lib.input());
 
-Lib.print(price * number);
+Lib.print(price * count);
 Lib.print("\n");
 ```
 
-入力つきで実行:
+## 入力つきで実行する
+
+入力例が次のように 2 行あるとします。
+
+```text
+100
+3
+```
+
+ターミナルでは、次のように実行できます。
 
 ```bash
 printf '100\n3\n' | node 03.first-step/3.4.E1.js
 ```
 
-対応ファイル:
+## 問題ファイルの目安
 
-| file | 内容 |
+| ファイル | 内容 |
 | --- | --- |
-| `3.4.E1.js` から `3.4.E7.js` | 入力を使う練習 |
+| `3.1.1.E1.js` から `3.1.1.E12.js` | 数値や式の出力 |
+| `3.1.2.E1.js` から `3.1.2.E3.js` | 文字列の出力 |
+| `3.2.E1.js`, `3.2.E2.js` | 文を順番に並べる |
+| `3.3.E1.js` から `3.3.E3.js` | 名前を使う |
+| `3.4.E1.js` から `3.4.E7.js` | 入力を読む |
+| `Numbers.*.js` | 数値の例 |
+| `Strings.*.js` | 文字列の例 |
 | `Input.*.js` | 入力の例 |
 
-入力の基本形:
+## よくあるミス
 
-| code | 意味 |
+| ミス | 直し方 |
 | --- | --- |
-| `let s = Lib.input();` | 文字列として読む |
-| `let n = Number(Lib.input());` | 数値として読む |
+| 文字列を `"` で囲んでいない | `"Hello"` のように囲む |
+| 最後の改行がない | `Lib.print("\n");` を足す |
+| 数値入力を文字列のまま計算している | `Number(Lib.input())` を使う |
+| 出力例と空白が違う | 出力例を 1 文字ずつ見る |
+| 変数名を間違える | `price` と `prcie` のようなスペル違いを探す |
 
-入力、計算、出力の完成形:
+## 確認コマンド
 
-```js
-let a = Number(Lib.input());
-let b = Number(Lib.input());
-Lib.print("---\n");
-Lib.print(a + b);
-Lib.print("\n");
+文法チェックです。
+
+```bash
+node --check 03.first-step/3.4.E1.js
 ```
 
-出力例に単位や文字がある場合は、文字列として分けて出します。
+実行例です。
 
-```js
-Lib.print("Alice: ");
-Lib.print(1163 * 79);
-Lib.print(" yen\n");
+```bash
+printf '100\n3\n' | node 03.first-step/3.4.E1.js
 ```

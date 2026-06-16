@@ -1,171 +1,124 @@
 # 05. ブロックと変数
 
-この章のゴールは、変数の作り方、値の入れ方、値の使い方を分けて理解することです。
+この章では、変数の作り方、値の入れ方、使える範囲を学びます。
 
-## 全問を解くための型
+変数は「値に名前を付ける箱」のようなものです。ただし、JavaScript では変数を使える場所が決まっています。この章では、そのルールをゆっくり確認します。
 
-05章は、変数の「作る」「入れる」「読む」「入れ直す」を見分ければ解けます。
+## この章のゴール
+
+| 学ぶこと | 例 |
+| --- | --- |
+| 変数を作る | `let x;` |
+| 変数に値を入れる | `x = 10;` |
+| 作ると同時に値を入れる | `let x = 10;` |
+| 変数を使って計算する | `x + y` |
+| ブロックの範囲を理解する | `{ ... }` |
+
+## 変数を作る
+
+`let` で変数を作ります。
 
 ```js
-let a;        // 作る
-a = 10;      // 入れる
-Lib.print(a); // 読む
-a = a + 1;   // 入れ直す
+let price;
 ```
 
-初期値が分かっているなら、作ることと入れることを1行にできます。
+値を入れるには `=` を使います。
 
 ```js
-let a = 10;
+price = 120;
 ```
 
-## 5.1 ブロック
+作るのと同時に値を入れることもできます。
 
-ブロックは `{` と `}` で囲まれたまとまりです。
+```js
+let price = 120;
+```
+
+## 代入と比較は違う
+
+`=` は「右の値を左の変数に入れる」です。
+
+```js
+let x = 10;
+x = 20;
+```
+
+等しいか調べるときは `===` です。
+
+```js
+let same = x === 20;
+```
+
+## ブロック
+
+`{` から `}` までをブロックと呼びます。
 
 ```js
 {
-    Lib.print("Hello");
+    let x = 10;
+    Lib.print(x);
     Lib.print("\n");
 }
 ```
 
-授業コードでは、処理をこのブロックの中に書きます。
+`let` で作った変数は、基本的にそのブロックの中で使います。ブロックの外から使おうとすると、`ReferenceError` になることがあります。
+
+## 初期化されていない変数
+
+値を入れていない変数の中身は `undefined` です。
 
 ```js
-"use strict";
-const Lib = require(require("os").homedir() + "/c/lib.js");
-{
-    // ここに書く
-}
-```
-
-## 5.2 宣言、代入、参照
-
-変数は3つの動きで読みます。
-
-| code | 意味 |
-| --- | --- |
-| `let a;` | `a` という箱を作る |
-| `a = 0;` | `a` に `0` を入れる |
-| `Lib.print(a);` | `a` の中身を読む |
-
-例:
-
-```js
-let a;
-a = 0;
-Lib.print(a);
+let x;
+Lib.print(x);
 Lib.print("\n");
 ```
 
-対応ファイル:
+計算に使う変数には、先に値を入れてください。
 
-| file | 内容 |
+## trace ファイルについて
+
+この章には `.trace.txt` のファイルがあります。
+
+| ファイル | 内容 |
 | --- | --- |
-| `Variable-Declaration.Undefined.1.js` | 宣言直後の値 |
-| `Variable-Aassignment.1.js` | 代入 |
-| `Variables.1.js` | 宣言、代入、参照 |
+| `5.4.E1.trace.txt` | 実行の流れを書く問題 |
+| `5.4.E2.trace.txt` | 変数の変化を追う問題 |
+| `5.4.E3.trace.txt` | ブロックや代入を追う問題 |
 
-## 5.3 初期化
+`.trace.txt` は JavaScript として実行するファイルではありません。コードが上から順にどう動くか、変数の値がどう変わるかを書きます。
 
-宣言と代入を1行で書くこともできます。これを初期化と呼びます。
+## 問題ファイルの目安
 
-```js
-let a = 0;
-let b = 1;
-let c = a + b;
-```
-
-読み方:
-
-| code | 意味 |
+| ファイル | 内容 |
 | --- | --- |
-| `let a = 0;` | `a` を作って、最初から `0` を入れる |
-| `let c = a + b;` | `a + b` の結果を `c` に入れる |
-
-対応ファイル:
-
-| file | 内容 |
-| --- | --- |
+| `variable-declaration.0.js` | 変数宣言 |
+| `Variable-Declaration.Undefined.1.js` | `undefined` |
 | `Variable-Initialization.1.js` | 初期化 |
-| `Variables.2.js` | 変数を使った計算 |
-| `variable-declaration.0.js` | 宣言の基本 |
+| `Variable-Aassignment.1.js` | 代入 |
+| `Variable-Binding.1.js` | 名前と値の対応 |
+| `Variable-Scope.1.js` | 変数の有効範囲 |
+| `5.4.E1.js` | 練習問題 |
 
-## 5.4 更新
+## よくあるミス
 
-変数には新しい値を入れ直せます。
+| ミス | 直し方 |
+| --- | --- |
+| `let` なしで変数を使う | 先に `let x = ...;` と書く |
+| 変数名のスペルが違う | 宣言した名前と使う名前を見比べる |
+| ブロックの外で変数を使う | 変数を使う場所と作った場所を確認する |
+| 比較で `=` を使う | 比較は `===` |
+| 値を入れる前に計算する | 先に初期化する |
 
-```js
-let count = 0;
-count = count + 1;
-count = count + 1;
-Lib.print(count);
-Lib.print("\n");
+## 確認コマンド
+
+```bash
+node --check 05.blocks-and-variables/5.4.E1.js
+node 05.blocks-and-variables/5.4.E1.js
+./grademe.sh 05.blocks-and-variables/5.4.E1.js
 ```
 
-出力:
+trace 問題は次のように採点できます。
 
-```text
-2
-```
-
-`count = count + 1;` は、今の `count` に `1` を足して、もう一度 `count` に入れる、という意味です。
-
-## 5.5 スコープ
-
-`let` で作った変数は、作ったブロックの中で使えます。
-
-```js
-{
-    let a = 1;
-    Lib.print(a);
-    Lib.print("\n");
-}
-```
-
-ブロックの外では使えません。
-
-```js
-{
-    let a = 1;
-}
-
-// ここでは a は使えない
-```
-
-同じブロックで同じ名前を2回 `let` するのも避けます。
-
-```js
-// NG
-let a = 1;
-let a = 2;
-
-// OK
-let b = 1;
-b = 2;
-```
-
-## 5.6 変数で問題を解く手順
-
-長い式は、小さい名前に分けます。
-
-```js
-let price = Number(Lib.input());
-let number = Number(Lib.input());
-let subtotal = price * number;
-let tax_included = Math.floor(subtotal * 1.1);
-
-Lib.print(tax_included);
-Lib.print("\n");
-```
-
-同じ値を何度も使うなら、先に変数に入れます。
-
-```js
-let total = price * number;
-Lib.print(total);
-Lib.print("\n");
-Lib.print(total + 230);
-Lib.print("\n");
+```bash
+./grademe.sh 05.blocks-and-variables/5.4.E1.trace.txt
 ```

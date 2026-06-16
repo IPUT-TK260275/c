@@ -1,88 +1,109 @@
-# 02. 実行とデバッグ
+# 02. Code, Run, Debug
 
-この章のゴールは、コードを書いて、実行して、出力を見ることです。
+この章では、プログラムを書いて実行し、エラーが出たときにどこを見ればよいかを学びます。
 
-## 全問を解くための型
+初心者のうちは、エラーが出るのは普通です。大事なのは、エラーを「失敗」ではなく「直す場所を教えてくれるメッセージ」として読むことです。
 
-02章では、まず文字を正確に出せることが大事です。
+## この章のゴール
 
-```js
-"use strict";
-const Lib = require(require("os").homedir() + "/c/lib.js");
-{
-    Lib.print("I am ");
-    Lib.print("Alice");
-    Lib.print("\n");
-}
-```
-
-出力例と同じにするコツ:
-
-| 見たいもの | 書き方 |
+| できること | 例 |
 | --- | --- |
-| 文字を出す | `Lib.print("text");` |
-| 改行する | `Lib.print("\n");` |
-| 入力をそのまま使う | `let x = Lib.input();` |
-| 文字と入力をつなげる | `Lib.print("Hello, "); Lib.print(x);` |
+| JavaScript を実行する | `node my-first-code.js` |
+| 文法チェックをする | `node --check my-first-code.js` |
+| エラーの行番号を見る | `ファイル名:行番号` |
+| 出力を確認する | 期待した文字が表示されるか見る |
 
-## 2.1 最初のプログラム
+## JavaScript を実行する
 
-最小の形:
-
-```js
-"use strict";
-const Lib = require(require("os").homedir() + "/c/lib.js");
-{
-    Lib.print("Hello\n");
-}
-```
-
-見るポイント:
-
-| code | 意味 |
-| --- | --- |
-| `Lib.print(...)` | 画面に出す |
-| `"Hello\n"` | `Hello` と改行 |
-| `{ ... }` | この中の文を上から順に実行 |
-
-実行:
+この章のフォルダへ移動します。
 
 ```bash
-node 02.code-run-debug/my-first-code.js
+cd ~/c/02.code-run-debug
 ```
 
-## 2.2 入力
-
-入力を読むときは `Lib.input()` を使います。
-
-```js
-let fruit = Lib.input();
-Lib.print(fruit);
-Lib.print("\n");
-```
-
-入力つきで実行:
+ファイル一覧を見ます。
 
 ```bash
-printf 'apple\n' | node 02.code-run-debug/my-favorite-fruit.js
+ls
 ```
 
-## 2.3 デバッグ
+JavaScript ファイルを実行します。
 
-デバッグでは、コードがどの順番で動くかを1行ずつ見ます。
+```bash
+node my-first-code.js
+```
 
-基本の見方:
+`node` は JavaScript を動かすコマンドです。
 
-1. 上から下へ動く
-2. `Lib.print` の行で画面表示が増える
-3. `Lib.input` の行で入力待ちになる
-4. 変数がある場合は、右辺の値が左辺の名前に入る
+## 文法だけ確認する
 
-## ファイル一覧
+実行前に、書き方が壊れていないか確認できます。
 
-| file | 内容 |
+```bash
+node --check my-first-code.js
+```
+
+何も表示されなければ、文法エラーはありません。
+
+ただし、文法が正しくても、計算や条件が間違っていることはあります。`--check` は「書き方の最低限の確認」だと思ってください。
+
+## エラーの読み方
+
+エラーが出たら、まず最初のほうにある `ファイル名:行番号` を見ます。
+
+```text
+my-first-code.js:5
+```
+
+これは「`my-first-code.js` の 5 行目あたりを見てください」という意味です。
+
+### よくあるエラー
+
+| エラー | よくある原因 |
 | --- | --- |
-| `my-first-code.js` | 自己紹介の出力 |
-| `my-favorite-fruit.js` | 入力を読んで出力 |
-| `anata.js` | 練習用コード |
-| `attoteki.js` | 練習用コード |
+| `SyntaxError` | かっこ、引用符、セミコロンなどの書き忘れ |
+| `ReferenceError` | 変数名のスペルミス、まだ作っていない名前を使った |
+| `TypeError` | 値の種類が思ったものと違う |
+| `Cannot find module` | 別の場所で実行している、または必要なファイルがない |
+
+## Python や C++ のファイルについて
+
+このフォルダには `.py` や `.cpp` のファイルもあります。
+
+| 拡張子 | 言語 |
+| --- | --- |
+| `.js` | JavaScript |
+| `.py` | Python |
+| `.cpp` | C++ |
+
+この教材で主に使うのは JavaScript です。まずは `.js` のファイルを中心に見てください。
+
+## 練習の進め方
+
+1. ファイルを VS Code で開く。
+2. 何が表示されそうか予想する。
+3. `node ファイル名.js` で実行する。
+4. 予想と違ったら、コードを 1 行ずつ読む。
+5. エラーが出たら、行番号の近くを見る。
+
+## 困ったとき
+
+今いる場所を確認します。
+
+```bash
+pwd
+ls
+```
+
+`02.code-run-debug` の中にいない場合は、移動します。
+
+```bash
+cd ~/c/02.code-run-debug
+```
+
+それでも動かない場合は、次を確認してください。
+
+```bash
+node --version
+node --check my-first-code.js
+```
