@@ -1,2 +1,0 @@
-Input the price: Input the number: ---
-1120

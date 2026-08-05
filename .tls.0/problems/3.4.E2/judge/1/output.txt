@@ -1,3 +1,0 @@
-Input the first name: Input the last name: ---
-Hello, Ueda sensei.
-Can I call you Jiro?

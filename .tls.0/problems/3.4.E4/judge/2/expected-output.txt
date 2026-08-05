@@ -1,5 +1,0 @@
----
-Pizza: 1950 yen
-Fried Chicken: 720 yen
-===
-Total: 2670 yen

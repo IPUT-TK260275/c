@@ -1,4 +1,0 @@
-Input a string: ---
-Mu
-MuMu
-MuMuMu

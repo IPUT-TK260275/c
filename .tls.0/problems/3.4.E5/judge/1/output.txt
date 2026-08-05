@@ -1,4 +1,0 @@
-Input the number: ---
-3
-9
-27

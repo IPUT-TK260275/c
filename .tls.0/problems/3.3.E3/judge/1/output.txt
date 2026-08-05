@@ -1,3 +1,0 @@
-Alice: 830 yen
-Bob: 640 yen
-Carol: 1990 yen

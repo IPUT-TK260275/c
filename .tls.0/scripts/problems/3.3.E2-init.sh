@@ -20,7 +20,7 @@ EOF
 cat << "EOF" > ~/"${JUDGE_DIR}/expected-output.txt"
 Alice: 780 yen
 Bob: 570 yen
-Carol: 1830 ye
+Carol: 1830 yen
 EOF
 cat << "EOF" > ~/"${JUDGE_DIR}/transform.js"
 "use strict";
