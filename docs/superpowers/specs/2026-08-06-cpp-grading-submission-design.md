@@ -6,7 +6,7 @@ Make `grademe.sh` and `submit.sh` recognize the twelve chapter 14 C++ answers in
 
 ## Scope
 
-- Add `.cpp` support to path-based problem-ID inference in both scripts.
+- Add `.cpp` support to path-based problem-ID inference in `grademe.sh`.
 - Add `.cpp` files to automatic problem discovery in both scripts.
 - Keep `.trace.txt` and `.js` behavior unchanged.
 - Do not discover `14.cpp/c/*.c`; C answers are outside this change.
@@ -18,7 +18,7 @@ Make `grademe.sh` and `submit.sh` recognize the twelve chapter 14 C++ answers in
 
 Use the existing extension-specific TLS check scripts. The generic scripts already initialize a problem and prefer `${problem_id}-check.sh` when present, so C++ compilation and execution do not need to be duplicated in `grademe.sh` or `submit.sh`.
 
-Add `.cpp` as a third supported filename form in `infer_problem_id_from_path`. Add a `.cpp` discovery pass to `discover_problem_files`, using the existing `seen` map and init-script existence check. This is intentionally a small mirrored change in the two standalone scripts; extracting shared code would enlarge the change without improving the requested behavior.
+Add `.cpp` as a third supported filename form in `grademe.sh`'s `infer_problem_id_from_path`. Add a `.cpp` discovery pass to `discover_problem_files` in both scripts, using the existing `seen` map and init-script existence check. `submit.sh` keeps its existing explicit `<PROBLEM_ID> <CODE_FILE_PATH>` interface. This is intentionally a small mirrored change in the two standalone scripts; extracting shared code would enlarge the change without improving the requested behavior.
 
 ## Error Handling
 

@@ -71,13 +71,14 @@ EXAMPLES:
   ./grademe.sh 4.1.A1 04.values-and-expressions/4.1.A1.js
   ./grademe.sh 7.4.R1 07.iteration/7.4.R1.trace.txt
   ./grademe.sh 8.4.E1 08.iteration-2/8.4.E1.js
+  ./grademe.sh 14.cpp/14.6.E1.cpp
   ./grademe.sh --all
   ./grademe.sh --jobs 8 --check-all
   ./grademe.sh --jobs 8 --case-jobs 8 --all
   JOBS=8 CASE_JOBS=8 ./grademe.sh --all
 
 This script runs TLS local grading only.
-It auto-detects local .js and .trace.txt answer files through chapter 08.
+It auto-detects local .js, .trace.txt, and .cpp answer files.
 EOF
 }
 
@@ -759,9 +760,12 @@ infer_problem_id_from_path() {
         *.js)
             problem_id="${file_name%.js}"
             ;;
+        *.cpp)
+            problem_id="${file_name%.cpp}"
+            ;;
         *)
             error "Cannot infer problem ID from file path: ${code_path}"
-            error "Expected a file ending in .js or .trace.txt."
+            error "Expected a file ending in .js, .trace.txt, or .cpp."
             return 2
             ;;
     esac
@@ -822,6 +826,28 @@ discover_problem_files() {
             -path "${TLS_DIR}" -prune -o \
             -path "${BASE_DIR}/.tls.0" -prune -o \
             -type f -name '*.js' -print |
+            sed "s#^${BASE_DIR}/##" |
+            sort -V
+    )
+
+    while IFS= read -r file; do
+        file_name="$(basename "${file}")"
+        problem_id="${file_name%.cpp}"
+
+        if [ -n "${seen[${problem_id}]:-}" ]; then
+            continue
+        fi
+        init_script="${TLS_DIR}/scripts/problems/${problem_id}-init.sh"
+        if [ -f "${init_script}" ]; then
+            seen["${problem_id}"]=1
+            printf '%s\t%s\n' "${problem_id}" "${file}"
+        fi
+    done < <(
+        find "${BASE_DIR}" \
+            -path "${BASE_DIR}/.git" -prune -o \
+            -path "${TLS_DIR}" -prune -o \
+            -path "${BASE_DIR}/.tls.0" -prune -o \
+            -type f -name '*.cpp' -print |
             sed "s#^${BASE_DIR}/##" |
             sort -V
     )
